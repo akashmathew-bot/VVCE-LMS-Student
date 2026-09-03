@@ -45,6 +45,7 @@
     "clsx": "2.1.1",
     "cmdk": "1.1.1",
     "date-fns": "3.6.0",
+    "dotenv": "^17.4.2",
     "embla-carousel-react": "8.6.0",
     "input-otp": "1.4.2",
     "lucide-react": "0.487.0",
@@ -87,5 +88,9 @@
     "overrides": {
       "vite": "6.3.5"
     }
+  },
+  "allowScripts": {
+    "@tailwindcss/oxide@4.1.12": true,
+    "esbuild@0.25.12": true
   }
 }

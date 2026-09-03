@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
+import 'dotenv/config';
 
-const supabaseUrl = 'https://yahvddokdffidkywmxqe.supabase.co';
-const supabaseKey = 'sb_publishable_Lq96lovf6MB_jA95-vyVDg_wvbfGjkf';
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function checkTable() {
@@ -10,12 +11,10 @@ async function checkTable() {
     .from('students')
     .select('*')
     .limit(5);
-
   if (error) {
     console.error("Error fetching students:", error);
   } else {
     console.log("Students found:", data);
   }
 }
-
 checkTable();
