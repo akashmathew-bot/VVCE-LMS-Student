@@ -19,8 +19,6 @@ import {
   BellRing,
 } from "lucide-react";
 
-const UNREAD_COUNT = 4;
-
 const navItems = [
   { icon: Home, label: "Dashboard", path: "/" },
   { icon: Calendar, label: "Timetable", path: "/timetable" },
@@ -41,48 +39,53 @@ export function RootLayout() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const isGuest = localStorage.getItem("guest_mode") === "true";
+    let mounted = true;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (isGuest) {
-        setSession({ user: { email: "guest@vvce.ac.in", user_metadata: { name: "Guest User" } } });
-        setIsAuthLoading(false);
-        return;
-      }
+    const loadSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!mounted) return;
+
       setSession(session);
       setIsAuthLoading(false);
+
       if (!session) {
-        navigate("/login");
+        navigate("/login", { replace: true });
       }
-    });
+    };
+
+    loadSession();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      const isGuest = localStorage.getItem("guest_mode") === "true";
-      if (isGuest) return;
-      
-      setSession(session);
-      if (!session) {
-        navigate("/login");
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (!mounted) return;
+
+      setSession(nextSession);
+
+      if (!nextSession) {
+        navigate("/login", { replace: true });
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const userEmail = session?.user?.email || "";
-  let userUSN = "N/A";
-  if (userEmail.endsWith("@vvce.ac.in")) {
-    const prefix = userEmail.split("@")[0].toUpperCase();
-    userUSN = /^[1-4][A-Z]{2}\d{2}[A-Z]{2}\d{3}$/.test(prefix) ? prefix : userEmail;
-  }
-  const userName = session?.user?.user_metadata?.name || (userEmail.startsWith("guest") ? "Guest User" : "Student Profile");
+  const userUSN = userEmail.endsWith("@vvce.ac.in")
+    ? userEmail.split("@")[0].toUpperCase()
+    : "N/A";
+  const userName =
+    session?.user?.user_metadata?.name || "Student Profile";
 
   const handleLogout = async () => {
-    localStorage.removeItem("guest_mode");
     await supabase.auth.signOut();
-    navigate("/login");
+    navigate("/login", { replace: true });
   };
 
   const NotifButton = ({ size = 20 }: { size?: number }) => (
@@ -92,9 +95,6 @@ export function RootLayout() {
       aria-label="Notifications"
     >
       <BellRing size={size} strokeWidth={1.75} />
-      {UNREAD_COUNT > 0 && (
-        <span className="absolute top-1.5 right-1.5 w-[7px] h-[7px] bg-red-500 rounded-full" />
-      )}
     </button>
   );
 
@@ -112,7 +112,6 @@ export function RootLayout() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
@@ -126,6 +125,7 @@ export function RootLayout() {
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="p-2 text-black rounded hover:bg-gray-100 transition-colors"
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
             >
               {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
@@ -133,7 +133,6 @@ export function RootLayout() {
         </div>
       </div>
 
-      {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <>
@@ -200,10 +199,8 @@ export function RootLayout() {
         )}
       </AnimatePresence>
 
-      {/* Desktop Sidebar */}
       <div className="hidden lg:block fixed top-0 left-0 bottom-0 w-64 bg-white border-r border-gray-200 overflow-y-auto">
         <div className="p-6">
-          {/* Logo row */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-black rounded flex items-center justify-center">
@@ -217,7 +214,6 @@ export function RootLayout() {
             <NotifButton size={19} />
           </div>
 
-          {/* Student card */}
           <div className="mb-8 p-4 bg-gray-50 rounded border border-gray-200">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center">
@@ -259,7 +255,6 @@ export function RootLayout() {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="lg:ml-64 pt-16 lg:pt-0 min-h-screen">
         <Outlet />
       </div>
