@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router";
+import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { Mail, Lock, LogIn } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -15,15 +15,14 @@ export function Login() {
     e.preventDefault();
     setError("");
 
-    let formattedEmail = email.trim();
-    
-    // Auto-format USN to email if missing domain
+    let formattedEmail = email.trim().toLowerCase();
+
     if (!formattedEmail.includes("@")) {
-      formattedEmail = `${formattedEmail}@vvce.ac.in`.toLowerCase();
+      formattedEmail = `${formattedEmail}@vvce.ac.in`;
     }
 
     if (!formattedEmail.endsWith("@vvce.ac.in")) {
-      setError("Please use your VVCE email address or a valid USN");
+      setError("Please use your VVCE email address or USN.");
       return;
     }
 
@@ -34,53 +33,13 @@ export function Login() {
       password,
     });
 
+    setIsLoading(false);
+
     if (authError) {
-      if (authError.message === "Invalid login credentials") {
-        const usn = formattedEmail.split('@')[0].toUpperCase();
-        const { data: studentData, error: dbError } = await supabase
-          .from('students')
-          .select('*')
-          .eq('usn', usn)
-          .single();
-
-        if (studentData) {
-          const { error: signUpError } = await supabase.auth.signUp({
-            email: formattedEmail,
-            password: password, 
-            options: {
-              data: {
-                name: studentData.name,
-              }
-            }
-          });
-
-          if (signUpError) {
-            setError("Failed to create your account: " + signUpError.message);
-            setIsLoading(false);
-            return;
-          }
-
-          setIsLoading(false);
-          navigate("/");
-          return;
-        } else {
-          setError("You are not registered in the student database.");
-          setIsLoading(false);
-          return;
-        }
-      }
-      
-      setError(authError.message);
-      setIsLoading(false);
+      setError("Invalid USN/email or password.");
       return;
     }
 
-    setIsLoading(false);
-    navigate("/");
-  };
-
-  const handleGuestLogin = () => {
-    localStorage.setItem("guest_mode", "true");
     navigate("/");
   };
 
@@ -121,6 +80,7 @@ export function Login() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your.email@vvce.ac.in"
                   className="w-full bg-white border border-gray-200 rounded-xl px-12 py-3 text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary"
+                  autoComplete="username"
                   required
                 />
               </div>
@@ -141,6 +101,7 @@ export function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   className="w-full bg-white border border-gray-200 rounded-xl px-12 py-3 text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary"
+                  autoComplete="current-password"
                   required
                 />
               </div>
@@ -151,6 +112,7 @@ export function Login() {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 text-red-300 text-sm"
+                role="alert"
               >
                 {error}
               </motion.div>
@@ -170,25 +132,11 @@ export function Login() {
                 </>
               )}
             </button>
-
-            <button
-              type="button"
-              onClick={handleGuestLogin}
-              className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center mt-3"
-            >
-              Enter as Guest
-            </button>
-
-            <div className="flex items-center justify-between pt-2">
-
-              <a
-                href="#"
-                className="text-secondary hover:text-secondary/80 text-sm transition-colors font-medium"
-              >
-                Forgot Password?
-              </a>
-            </div>
           </form>
+
+          <p className="text-white/50 text-center mt-6 text-xs">
+            Accounts are provided by VVCE. Self-registration is not available.
+          </p>
         </div>
 
         <p className="text-white/40 text-center mt-6 text-sm">
